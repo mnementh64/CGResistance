@@ -1,3 +1,3 @@
 # Coding game
 
-Simple puzzle Chuck Norris solution.
+Very hard puzzle Resistance kind of solution ...
