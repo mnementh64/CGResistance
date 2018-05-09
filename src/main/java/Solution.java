@@ -43,7 +43,7 @@ class Problem {
     String morse;
     Set<String> dictionary = new TreeSet<>();
     Set<String> dictionaryFirstLetters = new TreeSet<>();
-    Map<String, List<String>> wordsByFirstLetter = new HashMap<>();
+    Map<String, List<String>> wordsInMorseByFirstLetter = new HashMap<>();
 
     void addEntry(String word) {
         dictionary.add(word);
@@ -60,7 +60,7 @@ class Problem {
 
         for (String word : dictionary) {
             String firstLetter = word.substring(0, 1);
-            wordsByFirstLetter.computeIfAbsent(firstLetter, (letter) -> new ArrayList<>()).add(word);
+            wordsInMorseByFirstLetter.computeIfAbsent(firstLetter, (letter) -> new ArrayList<>()).add(Morse.buildMorseSequence(word));
         }
     }
 }
@@ -76,17 +76,6 @@ class ProblemSolver {
 
     long solve() {
         // Max duration = 1.8s
-
-        // Iteratively build a map like Map<morseSequence, nbCombi>.
-        // At each iteration, split the append after word all possible words separated by a %
-        // Example :
-        // Iteration 1 :
-        //      DOC, "--..-.---..-."
-        // Iteration 2 :
-        //      DOC%IL, ".-.---..-."
-        //      DOC%ETE, ".---..-."
-        //      DOC%MATIN, "-."
-        // At last retains only word sequence with empty morse sequence
 
         boolean changed = findFirstWord();
         while (changed) {
@@ -131,10 +120,10 @@ class ProblemSolver {
         for (String firstLetter : problem.dictionaryFirstLetters) {
             if (Morse.startByLetter(sequence, firstLetter)) {
                 // get all words starting by this letter
-                List<String> words = problem.wordsByFirstLetter.get(firstLetter);
-                for (String word : words) {
+                List<String> wordsInMorse = problem.wordsInMorseByFirstLetter.get(firstLetter);
+                for (String wordInMorse : wordsInMorse) {
                     // if the sequence starts by the word, it makes a new combination
-                    String remainingSequence = Morse.startByWord(sequence, word);
+                    String remainingSequence = Morse.startByWord(sequence, wordInMorse);
                     if (remainingSequence != null) {
                         Long nbOccurences = localMap.getOrDefault(remainingSequence, 0L) + 1;
                         localMap.put(remainingSequence, nbOccurences);
@@ -147,58 +136,57 @@ class ProblemSolver {
         return localMap.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() * multiplicator));
     }
+}
 
-    private static class Morse {
-        private static Map<String, String> MORSE_DICTIONARY = createMorseDictionary();
+class Morse {
+    private static Map<String, String> MORSE_DICTIONARY = createMorseDictionary();
 
-        public static boolean startByLetter(String sequence, String firstLetter) {
-            String morseSequence = MORSE_DICTIONARY.get(firstLetter);
-            return sequence.length() >= morseSequence.length() && sequence.startsWith(morseSequence);
+    public static boolean startByLetter(String sequence, String firstLetter) {
+        String morseSequence = MORSE_DICTIONARY.get(firstLetter);
+        return sequence.length() >= morseSequence.length() && sequence.startsWith(morseSequence);
+    }
+
+    public static String startByWord(String sequence, String morseSequence) {
+        int morseSequenceLength = morseSequence.length();
+        if (sequence.length() >= morseSequenceLength && sequence.startsWith(morseSequence)) {
+            return sequence.substring(morseSequenceLength);
         }
 
-        public static String startByWord(String sequence, String word) {
-            String morseSequence = buildMorseSequence(word);
-            int morseSequenceLength = morseSequence.length();
-            if (sequence.length() >= morseSequenceLength && sequence.startsWith(morseSequence)) {
-                return sequence.substring(morseSequenceLength);
-            }
+        return null;
+    }
 
-            return null;
-        }
+    public static String buildMorseSequence(String word) {
+        return word.chars().mapToObj(c -> MORSE_DICTIONARY.get(String.valueOf((char) c))).collect(Collectors.joining());
+    }
 
-        private static String buildMorseSequence(String word) {
-            return word.chars().mapToObj(c -> MORSE_DICTIONARY.get(String.valueOf((char) c))).collect(Collectors.joining());
-        }
-
-        private static Map<String, String> createMorseDictionary() {
-            Map<String, String> morse = new HashMap<>();
-            morse.put("A", ".-");
-            morse.put("B", "-...");
-            morse.put("C", "-.-.");
-            morse.put("D", "-..");
-            morse.put("E", ".");
-            morse.put("F", "..-.");
-            morse.put("G", "--.");
-            morse.put("H", "....");
-            morse.put("I", "..");
-            morse.put("J", ".---");
-            morse.put("K", "-.-");
-            morse.put("L", ".-..");
-            morse.put("M", "--");
-            morse.put("N", "-.");
-            morse.put("O", "---");
-            morse.put("P", ".--.");
-            morse.put("Q", "--.-");
-            morse.put("R", ".-.");
-            morse.put("S", "...");
-            morse.put("T", "-");
-            morse.put("U", "..-");
-            morse.put("V", "...-");
-            morse.put("W", ".--");
-            morse.put("X", "-..-");
-            morse.put("Y", "-.--");
-            morse.put("Z", "--..");
-            return morse;
-        }
+    private static Map<String, String> createMorseDictionary() {
+        Map<String, String> morse = new HashMap<>();
+        morse.put("A", ".-");
+        morse.put("B", "-...");
+        morse.put("C", "-.-.");
+        morse.put("D", "-..");
+        morse.put("E", ".");
+        morse.put("F", "..-.");
+        morse.put("G", "--.");
+        morse.put("H", "....");
+        morse.put("I", "..");
+        morse.put("J", ".---");
+        morse.put("K", "-.-");
+        morse.put("L", ".-..");
+        morse.put("M", "--");
+        morse.put("N", "-.");
+        morse.put("O", "---");
+        morse.put("P", ".--.");
+        morse.put("Q", "--.-");
+        morse.put("R", ".-.");
+        morse.put("S", "...");
+        morse.put("T", "-");
+        morse.put("U", "..-");
+        morse.put("V", "...-");
+        morse.put("W", ".--");
+        morse.put("X", "-..-");
+        morse.put("Y", "-.--");
+        morse.put("Z", "--..");
+        return morse;
     }
 }
